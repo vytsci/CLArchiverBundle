@@ -30,7 +30,8 @@ class EntityArchiver
 
     /**
      * @param ArchivableEntityInterface $entity         The entity that is archivable
-     * @param string                    $archivedEntity Classname of the entity that will be used to archive the entity (must implement ArchivedEntityInterface)
+     * @param string                    $archivedEntity Classname of the entity that will be used to archive the entity
+     *                                                  (must implement ArchivedEntityInterface)
      *
      * @throws \InvalidArgumentException
      */
@@ -155,7 +156,10 @@ class EntityArchiver
             return new $class();
         }
 
-        throw new \InvalidArgumentException('There is no original entity set for that archived entity class: %s', $archivedEntityClass);
+        throw new \InvalidArgumentException(sprintf(
+            'There is no original entity set for that archived entity class: %s',
+            $archivedEntityClass
+        ));
     }
 
     /**
@@ -174,7 +178,10 @@ class EntityArchiver
             return new $class();
         }
 
-        throw new \InvalidArgumentException('There is no archiveable entity set for that entity class: %s', $entityClass);
+        throw new \InvalidArgumentException(sprintf(
+            'There is no archiveable entity set for that entity class: %s',
+            $entityClass
+        ));
     }
 
     /**
@@ -188,7 +195,10 @@ class EntityArchiver
     {
         $originalEntityName = array_search($archivedEntityName, $this->entityArchived);
         if ($originalEntityName === false) {
-            throw new \InvalidArgumentException('There is no original entity mapped to that archived entity name: %s', $archivedEntityName);
+            throw new \InvalidArgumentException(sprintf(
+                'There is no original entity mapped to that archived entity name: %s',
+                $archivedEntityName
+            ));
         }
 
         return $originalEntityName;
