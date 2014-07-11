@@ -51,15 +51,15 @@ class EntityArchiver
     /**
      * Archives the given entity by copying it's data into another entity that implements ArchivedEntityInterface
      *
-     * @param ArchivableEntityInterface $entity          The entity to be archived
-     * @param bool                      $persistAndFlush Whether the archived entity should be persisted to the database automatically
-     * @param bool                      $removeOriginal  Whether the original entity should be removed after successful archiving (requires $persistAndFlush to be true)
+     * @param ArchivableEntityInterface $entity         The entity to be archived
+     * @param bool                      $flush          Whether the archived entity should be flushed to the database automatically
+     * @param bool                      $removeOriginal Whether the original entity should be removed after successful archiving (requires $persistAndFlush to be true)
      *
      * @return ArchivedEntityInterface
      *
      * @throws \InvalidArgumentException If an entity was given that has not been persisted to the database yet
      */
-    public function archive(ArchivableEntityInterface $entity, $persistAndFlush = true, $removeOriginal = false)
+    public function archive(ArchivableEntityInterface $entity, $flush = true, $removeOriginal = false)
     {
         $data     = new ParameterBag();
         $metadata = $this->em->getClassMetadata(get_class($entity));
@@ -78,15 +78,14 @@ class EntityArchiver
         $archivedEntity->setOriginalId($entity->getId());
         $archivedEntity->setData($data->all());
 
-        if ($persistAndFlush === true) {
-            $this->em->persist($archivedEntity);
-            $this->em->flush();
+        $this->em->persist($archivedEntity);
 
-            // cant do everything in a single flush; we need to be sure the archived entity has been stored successfully
-            if ($removeOriginal === true) {
-                $this->em->remove($entity);
-                $this->em->flush();
-            }
+        if ($removeOriginal === true) {
+            $this->em->remove($entity);
+        }
+
+        if ($flush === true) {
+            $this->em->flush();
         }
 
         return $archivedEntity;
