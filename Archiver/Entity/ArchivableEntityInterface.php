@@ -2,6 +2,9 @@
 
 namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 
+/**
+ * Interface ArchivableEntityInterface
+ */
 interface ArchivableEntityInterface
 {
     /**

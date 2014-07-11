@@ -5,6 +5,9 @@ namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\ParameterBag;
 
+/**
+ * Class that handles the archiving and unarchiving of entities
+ */
 class EntityArchiver
 {
     /**

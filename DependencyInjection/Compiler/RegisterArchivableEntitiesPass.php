@@ -6,8 +6,16 @@ use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Reference;
 
+/**
+ * Compiler pass that adds archivable entities to the EntityArchiver
+ */
 class RegisterArchivableEntitiesPass implements CompilerPassInterface
 {
+    /**
+     * @param ContainerBuilder $container
+     *
+     * @throws \InvalidArgumentException
+     */
     public function process(ContainerBuilder $container)
     {
         $definition = $container->getDefinition('cl_archiver.archiver.entity');
