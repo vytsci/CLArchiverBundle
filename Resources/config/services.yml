@@ -5,9 +5,3 @@ services:
     cl_archiver.archiver.entity:
         class: %cl_archiver.archiver.entity.class%
         arguments: [@doctrine.orm.entity_manager]
-
-    # can be removed when stable, this is just to debug
-    cl_archiver.archivable_entity_example:
-        class: CL\Bundle\ArchiverBundle\Entity\ArchivableEntityExample
-        tags:
-            - { name: cl_archiver.archivable_entity, archived_entity: CL\Bundle\ArchiverBundle\Entity\ArchivedEntityExample }
