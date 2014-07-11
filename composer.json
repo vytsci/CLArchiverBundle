@@ -1,0 +1,26 @@
+{
+  "name": "cleentfaar/archiver-bundle",
+  "description": "A Symfony bundle that allows you to archive your files and entities in various formats.",
+  "keywords": ["archiver", "archive", "entity", "file", "symfony", "bundle"],
+  "type": "symfony-bundle",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Cas Leentfaar",
+      "homepage": "https://github.com/cleentfaar",
+      "email": "info@casleentfaar.com"
+    }
+  ],
+  "require": {
+    "symfony/framework-bundle": "~2.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "~3.7"
+  },
+  "autoload": {
+    "psr-0": {
+      "CL\\Bundle\\ArchiverBundle": ""
+    }
+  },
+  "target-dir": "CL/Bundle/ArchiverBundle"
+}
