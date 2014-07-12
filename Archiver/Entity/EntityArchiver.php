@@ -21,9 +21,15 @@ class EntityArchiver
 
     /**
      * @param EntityManager $em
+     *
+     * @throws \LogicException
      */
     public function __construct(EntityManager $em)
     {
+        if ($em->isOpen() !== true) {
+            throw new \LogicException('The entity manager\'s connection must be open for the archiver to work');
+        }
+
         $this->em = $em;
     }
 
@@ -76,7 +82,9 @@ class EntityArchiver
 
         $id = $entity->getId();
         if (empty($id)) {
-            throw new \InvalidArgumentException('Can\'t archive an entity without an ID, are you sure it has been persisted already?');
+            throw new \InvalidArgumentException(
+                'Cannot archive an entity without an ID, are you sure it has been persisted already?'
+            );
         }
 
         $archivedEntity = $this->createExtractableEntity($entity);
