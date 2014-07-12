@@ -3,7 +3,6 @@
 namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 
 use Doctrine\ORM\EntityManager;
-use Symfony\Component\HttpFoundation\ParameterBag;
 
 /**
  * Class that handles the archiving and unarchiving of entities
@@ -31,7 +30,7 @@ class EntityArchiver
     /**
      * @param ArchivableEntityInterface $entity         The entity that is archivable
      * @param string                    $archivedEntity Classname of the entity that will be used to archive the entity
-     *                                                  (must implement ArchivedEntityInterface)
+     *                                                  (must implement ExtractableEntityInterface)
      *
      * @throws \InvalidArgumentException
      */
@@ -44,7 +43,7 @@ class EntityArchiver
         }
 
         $implements      = class_implements($archivedEntity);
-        $shouldImplement = 'CL\Bundle\ArchiverBundle\Archiver\Entity\ArchivedEntityInterface';
+        $shouldImplement = 'CL\Bundle\ArchiverBundle\Archiver\Entity\ExtractableEntityInterface';
         if (!in_array($shouldImplement, $implements)) {
             throw new \InvalidArgumentException(sprintf('Archived entity should implement %s', $shouldImplement));
         }
@@ -53,41 +52,40 @@ class EntityArchiver
     }
 
     /**
-     * Archives the given entity by copying it's data into another entity that implements ArchivedEntityInterface
+     * Archives the given entity by copying it's data into another entity that implements ExtractableEntityInterface
      *
      * @param ArchivableEntityInterface $entity         The entity to be archived
      * @param bool                      $flush          Whether the archived entity should be flushed to the database automatically
      * @param bool                      $removeOriginal Whether the original entity should be removed after successful archiving (requires $persistAndFlush to be true)
      *
-     * @return ArchivedEntityInterface
+     * @return ExtractableEntityInterface
      *
      * @throws \InvalidArgumentException If an entity was given that has not been persisted to the database yet
      */
     public function archive(ArchivableEntityInterface $entity, $flush = true, $removeOriginal = false)
     {
-        $data     = new ParameterBag();
+        $data     = [];
         $metadata = $this->em->getClassMetadata(get_class($entity));
         foreach ($metadata->getFieldNames() as $field) {
             if (!in_array($field, ['id'])) {
-                $data->set($field, $metadata->getFieldValue($entity, $field));
+                $data[$field] = $metadata->getFieldValue($entity, $field);
             }
         }
 
         $id = $entity->getId();
         if (empty($id)) {
-            throw new \InvalidArgumentException('Cant archive an entity without an ID, did you forget to persist it first?');
+            throw new \InvalidArgumentException('Can\'t archive an entity without an ID, are you sure it has been persisted already?');
         }
 
-        $archivedEntity = $this->createArchivedEntity($entity);
+        $archivedEntity = $this->createExtractableEntity($entity);
         $archivedEntity->setOriginalId($entity->getId());
-        $archivedEntity->setData($data->all());
+        $archivedEntity->setData($data);
 
         $this->em->persist($archivedEntity);
 
         if ($removeOriginal === true) {
             $this->em->remove($entity);
         }
-
         if ($flush === true) {
             $this->em->flush();
         }
@@ -96,15 +94,15 @@ class EntityArchiver
     }
 
     /**
-     * @param ArchivedEntityInterface $archivedEntity The entity that was used to archive another entity
-     * @param bool                    $create         Whether a new entity should be constructed if the original entity no longer exists
-     * @param bool                    $removeArchive  Whether the archived entity should be removed after unarchiving
+     * @param ExtractableEntityInterface $archivedEntity The entity that was used to archive another entity
+     * @param bool                       $create         Whether a new entity should be constructed if the original entity no longer exists
+     * @param bool                       $removeArchive  Whether the archived entity should be removed after extraction
      *
-     * @return ArchivableEntityInterface The (original) unarchived entity
+     * @return ExtractableEntityInterface The (original) unarchived entity
      *
      * @throws \LogicException If the original entity could not be found and $create is false
      */
-    public function unarchive(ArchivedEntityInterface $archivedEntity, $create = true, $removeArchive = true)
+    public function extract(ExtractableEntityInterface $archivedEntity, $create = true, $removeArchive = true)
     {
         $originalEntity = $this->findOriginalEntity($archivedEntity);
         if ($originalEntity === null) {
@@ -128,13 +126,13 @@ class EntityArchiver
     }
 
     /**
-     * @param ArchivedEntityInterface $archivedEntity Archived entity from which the original entity should be determined
+     * @param ExtractableEntityInterface $archivedEntity Archived entity from which the original entity should be determined
      *
      * @return ArchivableEntityInterface|null The existing original entity object, or null if it could not be found
      *
      * @throws \InvalidArgumentException
      */
-    protected function findOriginalEntity(ArchivedEntityInterface $archivedEntity)
+    protected function findOriginalEntity(ExtractableEntityInterface $archivedEntity)
     {
         $originalEntityName = array_search(get_class($archivedEntity), $this->entityArchived);
 
@@ -142,13 +140,13 @@ class EntityArchiver
     }
 
     /**
-     * @param ArchivedEntityInterface $archivedEntity Archived entity from which the original entity should be determined
+     * @param ExtractableEntityInterface $archivedEntity Archived entity from which the original entity should be determined
      *
      * @return ArchivableEntityInterface The original entity object
      *
      * @throws \InvalidArgumentException If there is no original entity mapped to the given archived entity
      */
-    protected function createOriginalEntity(ArchivedEntityInterface $archivedEntity)
+    protected function createOriginalEntity(ExtractableEntityInterface $archivedEntity)
     {
         $archivedEntityClass = get_class($archivedEntity);
         $class               = array_search(get_class($archivedEntity), $this->entityArchived);
@@ -165,11 +163,11 @@ class EntityArchiver
     /**
      * @param ArchivableEntityInterface $entity The entity for which the archivable entity should be determined
      *
-     * @return ArchivedEntityInterface The archived entity
+     * @return ExtractableEntityInterface The archived entity
      *
      * @throws \InvalidArgumentException
      */
-    protected function createArchivedEntity($entity)
+    protected function createExtractableEntity($entity)
     {
         $entityClass = get_class($entity);
         if (array_key_exists($entityClass, $this->entityArchived)) {

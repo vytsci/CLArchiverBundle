@@ -1,7 +1,7 @@
 {
   "name": "cleentfaar/archiver-bundle",
-  "description": "A Symfony bundle that allows you to archive your files and entities in various formats.",
-  "keywords": ["archiver", "archive", "entity", "file", "symfony", "bundle"],
+  "description": "A Symfony bundle that allows you to (un)archive your files and entities in various formats.",
+  "keywords": ["zippy", "archive", "entity", "file", "rar", "zip", "tar", "symfony", "bundle"],
   "type": "symfony-bundle",
   "license": "MIT",
   "authors": [
@@ -12,6 +12,7 @@
     }
   ],
   "require": {
+    "alchemy/zippy": "~0.2",
     "symfony/framework-bundle": "~2.4",
     "doctrine/orm": "~2.2,>=2.2.3"
   },
@@ -23,5 +24,10 @@
       "CL\\Bundle\\ArchiverBundle": ""
     }
   },
-  "target-dir": "CL/Bundle/ArchiverBundle"
+  "target-dir": "CL/Bundle/ArchiverBundle",
+  "extra": {
+    "branch-alias": {
+      "dev-master": "1.0-dev"
+    }
+  }
 }

@@ -1,34 +1,76 @@
 <?php
 
-namespace CL\Bundle\ArchiverBundle\Archiver\File;
+namespace CL\Bundle\ArchiverBundle\Archiver;
 
+use Alchemy\Zippy\Exception\RuntimeException;
+use Alchemy\Zippy\Zippy;
+
+/**
+ * Class that handles the archiving and unarchiving of files using the Zippy library.
+ */
 class FileArchiver
 {
     /**
-     * Archives files with the given path
-     * If the path is a directory, the entire directory will be archived
-     *
-     * @param string $path            The path to the file(s) that need to be archived
-     * @param string $destinationPath The path to the archive
-     * @param string $format          The format to archive the given files with
-     * @param bool   $removeFiles     Whether the original files need to be removed after successful archival
-     *
-     * @return bool True if archival was successful, false otherwise
+     * @var Zippy
      */
-    public function archive($path, $destinationPath, $format = 'zip', $removeFiles = false)
+    protected $zippy;
+
+    /**
+     * @param Zippy $zippy
+     */
+    public function __construct(Zippy $zippy)
     {
-        // @TODO implement
+        $zippy->load();
+        $this->zippy = $zippy;
     }
 
     /**
-     * @param string $pathToArchive The location of the archive that need to be extracted
-     * @param string $destination   The destination of the files after extraction
-     * @param bool   $removeArchive Whether the archive needs to be removed after successful extraction
+     * @param string      $path           The path to the file(s) or directory that need to be archived.
+     * @param string      $destination    Destination of the archive to create (the extension determines the archive format).
+     * @param null|string $rootDir        If you want your files to be archived in a certain subdirectory, name it here.
+     * @param bool        $removeOriginal Whether the original file(s) or directory should be removed after successful extraction.
      *
-     * @return bool True if extraction was successful, false otherwise
+     * @throws \RuntimeException When archiving failed.
      */
-    public function unarchive($pathToArchive, $destination, $removeArchive = false)
+    public function archive($path, $destination, $rootDir = null, $removeOriginal = false)
     {
-        // @TODO implement
+        $files = [];
+        if ($rootDir !== null) {
+            $files[$rootDir] = $path;
+        } else {
+            $files[] = $path;
+        }
+
+        try {
+            $this->zippy->create($destination, $files, true);
+        } catch (RuntimeException $e) {
+            // abstract away the zippy exception
+            throw new \RuntimeException($e->getMessage(), null, $e);
+        }
+
+        if ($removeOriginal === true) {
+            unlink($removeOriginal);
+        }
+    }
+
+    /**
+     * @param string $path          The path to the archive.
+     * @param string $destination   The destination where files will be extracted to.
+     * @param bool   $removeArchive Whether the archive itself should be removed after successful extraction.
+     *
+     * @throws \RuntimeException When extraction failed.
+     */
+    public function extract($path, $destination, $removeArchive = false)
+    {
+        try {
+            $archive = $this->zippy->open($path);
+            $archive->extract($destination);
+        } catch (RuntimeException $e) {
+            throw new \RuntimeException($e->getMessage(), null, $e);
+        }
+
+        if ($removeArchive === true) {
+            unlink($path);
+        }
     }
 }

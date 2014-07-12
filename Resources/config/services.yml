@@ -1,7 +1,16 @@
 parameters:
     cl_archiver.archiver.entity.class: CL\Bundle\ArchiverBundle\Archiver\Entity\EntityArchiver
+    cl_archiver.archiver.file.class: CL\Bundle\ArchiverBundle\Archiver\File\FileArchiver
+    cl_archiver.zippy.class: Alchemy\Zippy\Zippy
 
 services:
+    cl_archiver.zippy:
+        class: %cl_archiver.zippy.class%
+
     cl_archiver.archiver.entity:
         class: %cl_archiver.archiver.entity.class%
         arguments: [@doctrine.orm.entity_manager]
+
+    cl_archiver.archiver.file:
+        class: %cl_archiver.archiver.file.class%
+        arguments: [@cl_archiver.zippy]
