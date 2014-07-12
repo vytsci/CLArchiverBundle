@@ -12,7 +12,9 @@ use Symfony\Component\DependencyInjection\Reference;
 class RegisterArchivableEntitiesPass implements CompilerPassInterface
 {
     /**
-     * @param ContainerBuilder $container
+     * {@inheritdoc}
+     *
+     * Adds archivable entities to the EntityArchiver
      *
      * @throws \InvalidArgumentException
      */
