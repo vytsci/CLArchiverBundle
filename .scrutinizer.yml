@@ -124,7 +124,10 @@ checks:
 tools:
     php_code_sniffer:
         config:
-            standard: PSR2
+            standard: Symfony2
+        excluded_dirs:
+            - vendor
+            - Tests
     php_cpd:
         excluded_dirs:
             - vendor
