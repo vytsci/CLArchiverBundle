@@ -26,10 +26,17 @@ class RegisterArchivableEntitiesPass implements CompilerPassInterface
         foreach ($container->findTaggedServiceIds($tag) as $id => $archivableEntities) {
             foreach ($archivableEntities as $archivableEntity) {
                 if (!isset($archivableEntity['archived_entity'])) {
-                    throw new \InvalidArgumentException(sprintf('Service "%s" must define the "archived_entity" attribute on "%s" tags.', $id, $tag));
+                    throw new \InvalidArgumentException(sprintf(
+                        'Service "%s" must define the "archived_entity" attribute on "%s" tags.',
+                        $id,
+                        $tag
+                    ));
                 }
 
-                $definition->addMethodCall('addArchivable', array(new Reference($id), $archivableEntity['archived_entity']));
+                $definition->addMethodCall('addArchivable', array(
+                    new Reference($id),
+                    $archivableEntity['archived_entity']
+                ));
             }
         }
     }
