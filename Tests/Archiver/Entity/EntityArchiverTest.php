@@ -3,7 +3,6 @@
 namespace CL\Bundle\ArchiverBundle\Tests\Archiver\Entity;
 
 use CL\Bundle\ArchiverBundle\Archiver\Entity\EntityArchiver;
-use Doctrine\ORM\EntityManager;
 
 /**
  * Tests the EntityArchiver class
@@ -70,7 +69,6 @@ class EntityArchiverTest extends \PHPUnit_Framework_TestCase
         $actualArchivable   = $this->archiver->extract($extractable);
         $this->assertEquals($expectedArchivable, $actualArchivable);
     }
-
 
     public function testArchiveAndExtract()
     {

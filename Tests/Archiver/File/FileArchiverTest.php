@@ -7,11 +7,6 @@ namespace CL\Bundle\ArchiverBundle\Tests\Archiver\Entity;
  */
 class FileArchiverTest extends \PHPUnit_Framework_TestCase
 {
-    public function testAddArchivable()
-    {
-        $this->markTestSkipped('Not yet ready');
-    }
-
     public function testArchive()
     {
         $this->markTestSkipped('Not yet ready');
