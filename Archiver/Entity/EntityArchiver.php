@@ -67,8 +67,7 @@ class EntityArchiver
      */
     public function archive(ArchivableEntityInterface $entity, $flush = true, $removeOriginal = false)
     {
-        /** @var EntityManager $em */
-        $em       = $this->managerRegistry->getManager('entity_manager');
+        $em       = $this->getEntityManager();
         $data     = [];
         $metadata = $em->getClassMetadata(get_class($entity));
         foreach ($metadata->getFieldNames() as $field) {
@@ -112,8 +111,7 @@ class EntityArchiver
      */
     public function extract(ExtractableEntityInterface $archivedEntity, $create = true, $removeArchive = true)
     {
-        /** @var EntityManager $em */
-        $em             = $this->managerRegistry->getManager('entity_manager');
+        $em             = $this->getEntityManager();
         $originalEntity = $this->findOriginalEntity($archivedEntity);
         if ($originalEntity === null) {
             if ($create !== true) {
@@ -151,7 +149,7 @@ class EntityArchiver
     {
         $originalEntityName = array_search(get_class($archivedEntity), $this->entityArchived);
 
-        return $em->find($originalEntityName, $archivedEntity->getOriginalId());
+        return $this->getEntityManager()->find($originalEntityName, $archivedEntity->getOriginalId());
     }
 
     /**
@@ -216,5 +214,13 @@ class EntityArchiver
         }
 
         return $originalEntityName;
+    }
+
+    /**
+     * @return EntityManager
+     */
+    protected function getEntityManager()
+    {
+        return $this->managerRegistry->getManager('entity_manager');
     }
 }
