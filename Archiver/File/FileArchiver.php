@@ -1,6 +1,6 @@
 <?php
 
-namespace CL\Bundle\ArchiverBundle\Archiver;
+namespace CL\Bundle\ArchiverBundle\Archiver\File;
 
 use Alchemy\Zippy\Exception\RuntimeException;
 use Alchemy\Zippy\Zippy;
