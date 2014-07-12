@@ -135,13 +135,13 @@ tools:
     php_hhvm: true
     php_loc:
         excluded_dirs:
-            - 'Tests/*'
-            - 'vendor/*'
+            - Tests
+            - vendor
     php_mess_detector: true
     php_pdepend:
         excluded_dirs:
-            - 'Tests/*'
-            - 'vendor/*'
+            - Tests
+            - vendor
     php_analyzer: true
     sensiolabs_security_checker: true
     external_code_coverage: true
