@@ -46,7 +46,15 @@ class EntityArchiverTest extends \PHPUnit_Framework_TestCase
             ->method('getClassMetadata')
             ->will($this->returnValue($archivableMetadata));
 
-        $this->archiver = new EntityArchiver($entityManager);
+        $managerRegistry = $this->getMockBuilder('\Doctrine\Persistance\ManagerRegistry')
+            ->disableOriginalConstructor()
+            ->getMock();
+        $managerRegistry
+            ->expects($this->any())
+            ->method('getManager')
+            ->will($this->returnValue($entityManager));
+
+        $this->archiver = new EntityArchiver($managerRegistry);
     }
 
     public function testAddArchivable()

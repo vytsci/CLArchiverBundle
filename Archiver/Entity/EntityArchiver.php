@@ -2,6 +2,7 @@
 
 namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 
+use Doctrine\Common\Persistence\ManagerRegistry;
 use Doctrine\ORM\EntityManager;
 
 /**
@@ -10,9 +11,9 @@ use Doctrine\ORM\EntityManager;
 class EntityArchiver
 {
     /**
-     * @var EntityManager
+     * @var ManagerRegistry
      */
-    protected $em;
+    protected $managerRegistry;
 
     /**
      * @var array
@@ -20,17 +21,11 @@ class EntityArchiver
     protected $entityArchived = array();
 
     /**
-     * @param EntityManager $em
-     *
-     * @throws \LogicException
+     * @param ManagerRegistry $managerRegistry
      */
-    public function __construct(EntityManager $em)
+    public function __construct(ManagerRegistry $managerRegistry)
     {
-        if ($em->isOpen() !== true) {
-            throw new \LogicException('The entity manager\'s connection must be open for the archiver to work');
-        }
-
-        $this->em = $em;
+        $this->managerRegistry = $managerRegistry;
     }
 
     /**
@@ -72,8 +67,10 @@ class EntityArchiver
      */
     public function archive(ArchivableEntityInterface $entity, $flush = true, $removeOriginal = false)
     {
+        /** @var EntityManager $em */
+        $em       = $this->managerRegistry->getManager('entity_manager');
         $data     = [];
-        $metadata = $this->em->getClassMetadata(get_class($entity));
+        $metadata = $em->getClassMetadata(get_class($entity));
         foreach ($metadata->getFieldNames() as $field) {
             if (!in_array($field, ['id'])) {
                 $data[$field] = $metadata->getFieldValue($entity, $field);
@@ -91,13 +88,13 @@ class EntityArchiver
         $archivedEntity->setOriginalId($entity->getId());
         $archivedEntity->setData($data);
 
-        $this->em->persist($archivedEntity);
+        $em->persist($archivedEntity);
 
         if ($removeOriginal === true) {
-            $this->em->remove($entity);
+            $em->remove($entity);
         }
         if ($flush === true) {
-            $this->em->flush();
+            $em->flush();
         }
 
         return $archivedEntity;
@@ -115,25 +112,27 @@ class EntityArchiver
      */
     public function extract(ExtractableEntityInterface $archivedEntity, $create = true, $removeArchive = true)
     {
+        /** @var EntityManager $em */
+        $em             = $this->managerRegistry->getManager('entity_manager');
         $originalEntity = $this->findOriginalEntity($archivedEntity);
         if ($originalEntity === null) {
             if ($create !== true) {
                 throw new \LogicException(
-                    'Could not find an existing entity that matches the archived '.
+                    'Could not find an existing entity that matches the archived ' .
                     'entity\'s original ID (and $create is false)'
                 );
             }
             $originalEntity = $this->createOriginalEntity($archivedEntity);
-            $this->em->persist($originalEntity);
+            $em->persist($originalEntity);
         }
         $data     = $archivedEntity->getData();
-        $metadata = $this->em->getClassMetadata(get_class($originalEntity));
+        $metadata = $em->getClassMetadata(get_class($originalEntity));
         foreach ($data as $field => $value) {
             $metadata->setFieldValue($originalEntity, $field, $value);
         }
-        $this->em->flush($originalEntity);
+        $em->flush($originalEntity);
         if ($removeArchive === true) {
-            $this->em->remove($archivedEntity);
+            $em->remove($archivedEntity);
         }
 
         return $originalEntity;
@@ -152,7 +151,7 @@ class EntityArchiver
     {
         $originalEntityName = array_search(get_class($archivedEntity), $this->entityArchived);
 
-        return $this->em->find($originalEntityName, $archivedEntity->getOriginalId());
+        return $em->find($originalEntityName, $archivedEntity->getOriginalId());
     }
 
     /**
