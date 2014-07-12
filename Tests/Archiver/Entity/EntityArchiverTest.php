@@ -34,7 +34,7 @@ class EntityArchiverTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(['id', 'title']));
 
         // Last, mock the EntityManager to return the mock of the repository
-        $entityManager = $this->getMockBuilder('\Doctrine\Common\Persistence\ObjectManager')
+        $entityManager = $this->getMockBuilder('\Doctrine\ORM\EntityManager')
             ->disableOriginalConstructor()
             ->getMock();
         $entityManager

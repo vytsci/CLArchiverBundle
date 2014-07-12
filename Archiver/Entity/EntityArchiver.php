@@ -2,7 +2,6 @@
 
 namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 
-use Doctrine\Common\Persistence\ObjectManager;
 use Doctrine\ORM\EntityManager;
 
 /**
@@ -21,9 +20,9 @@ class EntityArchiver
     protected $entityArchived = array();
 
     /**
-     * @param ObjectManager $em
+     * @param EntityManager $em
      */
-    public function __construct(ObjectManager $em)
+    public function __construct(EntityManager $em)
     {
         $this->em = $em;
     }
