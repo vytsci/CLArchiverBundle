@@ -26,9 +26,11 @@ class FileArchiver
 
     /**
      * @param string      $path           The path to the file(s) or directory that need to be archived.
-     * @param string      $destination    Destination of the archive to create (the extension determines the archive format).
+     * @param string      $destination    Destination of the archive to create
+     *                                    (the extension determines the archive format).
      * @param null|string $rootDir        If you want your files to be archived in a certain subdirectory, name it here.
-     * @param bool        $removeOriginal Whether the original file(s) or directory should be removed after successful extraction.
+     * @param bool        $removeOriginal Whether the original file(s) or directory should be removed
+     *                                    after successful extraction.
      *
      * @throws \RuntimeException When archiving failed.
      */
@@ -49,7 +51,7 @@ class FileArchiver
         }
 
         if ($removeOriginal === true) {
-            unlink($removeOriginal);
+            unlink($path);
         }
     }
 
