@@ -1,6 +1,7 @@
 filter:
     excluded_paths:
         - vendor
+        - Tests
 
 checks:
     php:
@@ -130,6 +131,7 @@ tools:
     php_cpd:
         excluded_dirs:
             - vendor
+            - Tests
     php_cs_fixer:
         config:
             level: all
@@ -137,9 +139,11 @@ tools:
     php_loc:
         excluded_dirs:
             - vendor
+            - Tests
     php_mess_detector: true
     php_pdepend:
         excluded_dirs:
             - vendor
+            - Tests
     php_analyzer: true
     sensiolabs_security_checker: true
