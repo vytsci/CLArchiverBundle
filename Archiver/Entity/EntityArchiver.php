@@ -116,8 +116,8 @@ class EntityArchiver
         if ($originalEntity === null) {
             if ($create !== true) {
                 throw new \LogicException(
-                    'Could not find an existing entity that matches the archived ' .
-                    'entity\'s original ID (and $create is false)'
+                    'Could not find an existing entity that matches the archived entity\'s original ID
+                    (and $create is false)'
                 );
             }
             $originalEntity = $this->createOriginalEntity($archivedEntity);
