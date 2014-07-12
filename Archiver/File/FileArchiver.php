@@ -16,12 +16,11 @@ class FileArchiver
     protected $zippy;
 
     /**
-     * @param Zippy $zippy
+     * Constructor.
      */
-    public function __construct(Zippy $zippy)
+    public function __construct()
     {
-        $zippy->load();
-        $this->zippy = $zippy;
+        $this->zippy = Zippy::load();
     }
 
     /**
