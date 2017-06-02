@@ -3,7 +3,7 @@
 namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 
 use Doctrine\Common\Persistence\ManagerRegistry;
-use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Class that handles the archiving and unarchiving of entities
@@ -11,9 +11,9 @@ use Doctrine\ORM\EntityManager;
 class EntityArchiver
 {
     /**
-     * @var ManagerRegistry
+     * @var EntityManagerInterface
      */
-    protected $managerRegistry;
+    protected $manager;
 
     /**
      * @var array
@@ -21,11 +21,11 @@ class EntityArchiver
     protected $entityArchived = array();
 
     /**
-     * @param ManagerRegistry $managerRegistry
+     * @param EntityManagerInterface $manager
      */
-    public function __construct(ManagerRegistry $managerRegistry)
+    public function __construct(EntityManagerInterface $manager)
     {
-        $this->managerRegistry = $managerRegistry;
+        $this->manager = $manager;
     }
 
     /**
@@ -217,10 +217,10 @@ class EntityArchiver
     }
 
     /**
-     * @return EntityManager
+     * @return EntityManagerInterface
      */
     protected function getEntityManager()
     {
-        return $this->managerRegistry->getManager('entity_manager');
+        return $this->manager;
     }
 }
