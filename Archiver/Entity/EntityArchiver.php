@@ -2,8 +2,12 @@
 
 namespace CL\Bundle\ArchiverBundle\Archiver\Entity;
 
+use Doctrine\Common\Collections\Collection;
 use Doctrine\Common\Persistence\ManagerRegistry;
+use Doctrine\Common\Util\ClassUtils;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\MappingException;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 
 /**
  * Class that handles the archiving and unarchiving of entities
@@ -21,6 +25,11 @@ class EntityArchiver
     protected $entityArchived = array();
 
     /**
+     * @var array
+     */
+    protected $entitiesInArchive = array();
+
+    /**
      * @param EntityManagerInterface $manager
      */
     public function __construct(EntityManagerInterface $manager)
@@ -29,21 +38,50 @@ class EntityArchiver
     }
 
     /**
-     * @param ArchivableEntityInterface $entity         The entity that is archivable
-     * @param string                    $archivedEntity Classname of the entity that will be used to archive the entity
+     * @param $entity
+     * @return bool
+     */
+    public function isArchivable($entity)
+    {
+        if (is_object($entity)) {
+            $entity = ClassUtils::getClass($entity);
+        }
+
+        return array_key_exists($entity, $this->entityArchived);
+    }
+
+    /**
+     * @param $entity
+     * @param $identifier
+     * @return bool
+     */
+    public function isArchived($entity, $identifier)
+    {
+        if (is_object($entity)) {
+            $entity = ClassUtils::getClass($entity);
+        }
+
+        return
+            isset($this->entitiesInArchive[$entity])
+            && in_array($identifier, $this->entitiesInArchive[$entity]);
+    }
+
+    /**
+     * @param ArchivableEntityInterface $entity The entity that is archivable
+     * @param string $archivedEntity Classname of the entity that will be used to archive the entity
      *                                                  (must implement ExtractableEntityInterface)
      *
      * @throws \InvalidArgumentException
      */
     public function addArchivable(ArchivableEntityInterface $entity, $archivedEntity)
     {
-        $implements      = class_implements($entity);
+        $implements = class_implements($entity);
         $shouldImplement = 'CL\Bundle\ArchiverBundle\Archiver\Entity\ArchivableEntityInterface';
         if (!in_array($shouldImplement, $implements)) {
             throw new \InvalidArgumentException(sprintf('Archivable entity should implement %s', $shouldImplement));
         }
 
-        $implements      = class_implements($archivedEntity);
+        $implements = class_implements($archivedEntity);
         $shouldImplement = 'CL\Bundle\ArchiverBundle\Archiver\Entity\ExtractableEntityInterface';
         if (!in_array($shouldImplement, $implements)) {
             throw new \InvalidArgumentException(sprintf('Archived entity should implement %s', $shouldImplement));
@@ -53,26 +91,74 @@ class EntityArchiver
     }
 
     /**
-     * Archives the given entity by copying it's data into another entity that implements ExtractableEntityInterface
-     *
-     * @param ArchivableEntityInterface $entity         The entity to be archived
-     * @param bool                      $flush          Whether the archived entity should be flushed to
-     *                                                  the database automatically
-     * @param bool                      $removeOriginal Whether the original entity should be removed after
-     *                                                  successful archiving (requires $persistAndFlush to be true)
-     *
-     * @return ExtractableEntityInterface
-     *
-     * @throws \InvalidArgumentException If an entity was given that has not been persisted to the database yet
+     * @param ArchivableEntityInterface $entity
+     * @param bool $flush
+     * @param bool $removeOriginal
+     * @return bool|ExtractableEntityInterface
+     * @throws \Doctrine\ORM\Mapping\MappingException
      */
     public function archive(ArchivableEntityInterface $entity, $flush = true, $removeOriginal = false)
     {
-        $em       = $this->getEntityManager();
-        $data     = [];
-        $metadata = $em->getClassMetadata(get_class($entity));
+        if (empty($entity) || !is_object($entity)) {
+            return false;
+        }
+
+        $accessor = PropertyAccess::createPropertyAccessor();
+
+        $em = $this->getEntityManager();
+        $data = [];
+        $class = get_class($entity);
+        $identifier = 'id'; //@todo: make this the proper way
+        $metadata = $em->getClassMetadata($class);
+
+        $this->entitiesInArchive[$class][] = $accessor->getValue($entity, $identifier);
+
         foreach ($metadata->getFieldNames() as $field) {
-            if (!in_array($field, ['id'])) {
-                $data[$field] = $metadata->getFieldValue($entity, $field);
+            if (!in_array($field, [$identifier])) {
+                $data[$field] = $accessor->getValue($entity, $field);
+            }
+        }
+        foreach ($metadata->getAssociationNames() as $associationName) {
+            $associationMapping = $metadata->getAssociationMapping($associationName);
+            $associationValue = $accessor->getValue($entity, $associationName);
+
+            if (
+                $associationMapping['isOwningSide']
+                || $associationMapping['sourceEntity'] === $class
+            ) {
+                if (
+                    $associationValue instanceof Collection
+                    && $this->isArchivable($associationMapping['targetEntity'])
+                ) {
+                    foreach ($associationValue as $associationValueItem) {
+                        $this->archive($associationValueItem);
+                    }
+
+                    continue;
+                }
+
+                if (
+                    is_object($associationValue)
+                    && isset($associationMapping['joinColumns'])
+                ) {
+                    if (
+                        $this->isArchivable($associationMapping['targetEntity'])
+                        && !$this->isArchived($associationValue, $accessor->getValue($associationValue, $identifier))
+                    ) {
+                        $this->archive($associationValue);
+                    }
+
+                    foreach ($associationMapping['joinColumns'] as $joinColumn) {
+                        try {
+                            $data[$associationName] = $em
+                                ->getClassMetadata(get_class($associationValue))
+                                ->getFieldValue($associationValue, $joinColumn['referencedColumnName'])
+                            ;
+                        } catch (MappingException $exception) {
+                            // Object is not an entity, we can log this or just ignore
+                        }
+                    }
+                }
             }
         }
 
@@ -101,9 +187,9 @@ class EntityArchiver
 
     /**
      * @param ExtractableEntityInterface $archivedEntity The entity that was used to archive another entity.
-     * @param bool                       $create         Whether a new entity should be constructed if the
+     * @param bool $create Whether a new entity should be constructed if the
      *                                                   original entity no longer exists.
-     * @param bool                       $removeArchive  Whether the archived entity should be removed after extraction.
+     * @param bool $removeArchive Whether the archived entity should be removed after extraction.
      *
      * @return ExtractableEntityInterface The (original) unarchived entity.
      *
@@ -111,7 +197,7 @@ class EntityArchiver
      */
     public function extract(ExtractableEntityInterface $archivedEntity, $create = true, $removeArchive = true)
     {
-        $em             = $this->getEntityManager();
+        $em = $this->getEntityManager();
         $originalEntity = $this->findOriginalEntity($archivedEntity);
         if ($originalEntity === null) {
             if ($create !== true) {
@@ -123,11 +209,12 @@ class EntityArchiver
             $originalEntity = $this->createOriginalEntity($archivedEntity);
             $em->persist($originalEntity);
         }
-        $data     = $archivedEntity->getData();
+        $data = $archivedEntity->getData();
         $metadata = $em->getClassMetadata(get_class($originalEntity));
         foreach ($data as $field => $value) {
             $metadata->setFieldValue($originalEntity, $field, $value);
         }
+        //@todo: we need to extract associations here
         $em->flush($originalEntity);
         if ($removeArchive === true) {
             $em->remove($archivedEntity);
@@ -163,15 +250,17 @@ class EntityArchiver
     protected function createOriginalEntity(ExtractableEntityInterface $archivedEntity)
     {
         $archivedEntityClass = get_class($archivedEntity);
-        $class               = array_search(get_class($archivedEntity), $this->entityArchived);
+        $class = array_search(get_class($archivedEntity), $this->entityArchived);
         if ($class !== false) {
             return new $class();
         }
 
-        throw new \InvalidArgumentException(sprintf(
-            'There is no original entity set for that archived entity class: %s',
-            $archivedEntityClass
-        ));
+        throw new \InvalidArgumentException(
+            sprintf(
+                'There is no original entity set for that archived entity class: %s',
+                $archivedEntityClass
+            )
+        );
     }
 
     /**
@@ -183,17 +272,19 @@ class EntityArchiver
      */
     protected function createExtractableEntity($entity)
     {
-        $entityClass = get_class($entity);
-        if (array_key_exists($entityClass, $this->entityArchived)) {
+        $entityClass = ClassUtils::getClass($entity);
+        if ($this->isArchivable($entityClass)) {
             $class = $this->entityArchived[$entityClass];
 
             return new $class();
         }
 
-        throw new \InvalidArgumentException(sprintf(
-            'There is no archiveable entity set for that entity class: %s',
-            $entityClass
-        ));
+        throw new \InvalidArgumentException(
+            sprintf(
+                'There is no archiveable entity set for that entity class: %s',
+                $entityClass
+            )
+        );
     }
 
     /**
@@ -207,10 +298,12 @@ class EntityArchiver
     {
         $originalEntityName = array_search($archivedEntityName, $this->entityArchived);
         if ($originalEntityName === false) {
-            throw new \InvalidArgumentException(sprintf(
-                'There is no original entity mapped to that archived entity name: %s',
-                $archivedEntityName
-            ));
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'There is no original entity mapped to that archived entity name: %s',
+                    $archivedEntityName
+                )
+            );
         }
 
         return $originalEntityName;
